@@ -1,4 +1,3 @@
-
 import streamlit as st
 import leafmap.foliumap as leafmap
 from streamlit_folium import st_folium
@@ -8,10 +7,10 @@ import shapely.geometry as geom
 import numpy as np
 import datetime
 from sentinelhub import SHConfig, BBox, CRS, DataCollection, SentinelHubRequest, MimeType
+
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib as mpl
-
 
 def value_to_green_hex(ndvi_real, ndvi_max,ndvi_min):
 
@@ -37,12 +36,11 @@ def value_to_green_hex(ndvi_real, ndvi_max,ndvi_min):
     print("value: ",value)
 
 
-    red_green_component = int(255 * (1 - value))
-    blue_component = 255  # Green stays constant at 255
+    red_blue_component = int(255 * (1 - value))
+    green_component = 255  # Green stays constant at 255
     
     # Create the hex color code
-    hex_color = f"#{red_green_component:02x}{red_green_component:02x}{blue_component:02x}"
-
+    hex_color = f"#{red_blue_component:02x}{green_component:02x}{red_blue_component:02x}"
 
 
     # if value > 0.7:
@@ -58,7 +56,7 @@ def value_to_green_hex(ndvi_real, ndvi_max,ndvi_min):
 
 def show_legend():
     # Define colormap from green (value=1) to brown (value=0)
-    cmap = mpl.colors.LinearSegmentedColormap.from_list("custom_cmap", ["white", "blue"])
+    cmap = mpl.colors.LinearSegmentedColormap.from_list("custom_cmap", ["white", "green"])
 
     # Create a figure and axis for the colorbar
     fig, ax = plt.subplots(figsize=(6, 1))
@@ -70,24 +68,26 @@ def show_legend():
 
     # Set the colorbar ticks and labels
     cb.set_ticks([0, 0.5, 1])
-    cb.set_ticklabels(['0 (needs irrigation)', '0.5', '1 (well irrigated)'])
+    cb.set_ticklabels(['0 (requires crop health attention)', '0.5', '1 (healthy crop)'])
 
     # Display the colorbar in Streamlit
     st.pyplot(fig)
 
-
-def get_soil_moisture(latitude, longitude, bbox_size_m=1000):
+def get_ndvi(latitude, longitude, bbox_size_m=1000):
     """
-    Get Soil Moisture Index (MOISTURE-INDEX) value for a given latitude and longitude using Sentinel Hub.
+    Get NDVI value for a given latitude and longitude using Sentinel Hub.
     
     :param latitude: float, latitude of the point of interest
     :param longitude: float, longitude of the point of interest
     :param access_token: str, Sentinel Hub access token
     :param bbox_size_m: int, size of the bounding box in meters (default: 1000 meters)
-    :return: float, Soil Moisture Index (MOISTURE-INDEX) value
+    :return: float, NDVI value
     """
-    # Configure Sentinel Hub
+
+
     access_token = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ3dE9hV1o2aFJJeUowbGlsYXctcWd4NzlUdm1hX3ZKZlNuMW1WNm5HX0tVIn0.eyJleHAiOjE3MjgwNzI4OTUsImlhdCI6MTcyODA2OTI5NSwianRpIjoiYTM2NTJjYWEtYTM4MS00MTk4LTkwYjAtNjc2YzM1ZTBmMmFhIiwiaXNzIjoiaHR0cHM6Ly9zZXJ2aWNlcy5zZW50aW5lbC1odWIuY29tL2F1dGgvcmVhbG1zL21haW4iLCJzdWIiOiI1NGI3OGM4Ni04OTliLTRkZjctOTlmYi00OTQzMWM4MWJlZjIiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiIwYzY4Mjk2Ni1kNjhjLTQ5YjYtYmI4MC1kYWQ1Yjk5OGE2NTMiLCJzY29wZSI6ImVtYWlsIHByb2ZpbGUiLCJjbGllbnRIb3N0IjoiMTQuMTM5LjM0LjEwMSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwicHJlZmVycmVkX3VzZXJuYW1lIjoic2VydmljZS1hY2NvdW50LTBjNjgyOTY2LWQ2OGMtNDliNi1iYjgwLWRhZDViOTk4YTY1MyIsImNsaWVudEFkZHJlc3MiOiIxNC4xMzkuMzQuMTAxIiwiYWNjb3VudCI6ImM5Yzk0ODdlLWNhOTEtNDdmOS05Nzk1LWUwNWFjNWNkN2VjYiIsImNsaWVudF9pZCI6IjBjNjgyOTY2LWQ2OGMtNDliNi1iYjgwLWRhZDViOTk4YTY1MyJ9.dUHiDH2UZgpiw0I3a4S3RhhCcizUbHZuSz9o8KC64fzvnnCb8cpieDzEHoLqJrMWARCYZdcGE6R8O2ar_7eh-3EdkbXmiUXEBgF2qx_ZALbKAap_Ko2VVwqLaIF9AReF4uQF2rffByw3JNRVz-WhsjIINbJ-8ktGvY8DhsdX7iUoCrxAO1E8G8QJSAJILftyJiIYNhM1afQozLKJnAjRqT-i-D0dhmMihrqExu6KtS9bHZdIjPnGhpn7Rd9isesHj-DvWPujmGCEIUt_WQzaXwp6k_XSMrpqCa6Wh51Q375YloIe5x7QMRKCJo1tkl6FaqUh8ZC9NUA3B39UH5JCmw"
+
+
 
     client_id = '0c682966-d68c-49b6-bb80-dad5b998a653'
     client_secret = 'PMq7tG60PVURIo3DBzU39zvcdBizkZ5i'
@@ -98,7 +98,6 @@ def get_soil_moisture(latitude, longitude, bbox_size_m=1000):
     config.sh_client_secret = client_secret
     config.sh_token = access_token
     config.save()
-
 
     # Define bounding box (convert meters to degrees using a rough approximation for lat/lon)
     # Note: 1 degree of latitude is approximately 111 km (~111,000 meters)
@@ -113,13 +112,13 @@ def get_soil_moisture(latitude, longitude, bbox_size_m=1000):
     # Calculate resolution in terms of pixels (area size in meters / pixel size)
     width_height = (int(bbox_size_m / pixel_size), int(bbox_size_m / pixel_size))
 
-    # Define the Sentinel-2 L2A Soil Moisture Index evalscript
+    # Define the Sentinel-2 L2A NDVI evalscript
     evalscript = """
     //VERSION=3
     function setup() {
         return {
             input: [{
-                bands: ["B08", "B11"]
+                bands: ["B04", "B08"]
             }],
             output: {
                 id: "default",
@@ -130,8 +129,8 @@ def get_soil_moisture(latitude, longitude, bbox_size_m=1000):
     }
 
     function evaluatePixel(sample) {
-        let moisture_index = (sample.B08 - sample.B11) / (sample.B08 + sample.B11);
-        return [moisture_index];
+        let ndvi = (sample.B08 - sample.B04) / (sample.B08 + sample.B04);
+        return [ndvi];
     }
     """
 
@@ -155,11 +154,12 @@ def get_soil_moisture(latitude, longitude, bbox_size_m=1000):
     # Get the data
     data = request.get_data()
 
-    # Extract the Soil Moisture Index value (average of all pixels)
-    moisture_values = data[0].flatten()
-    moisture_index = float(moisture_values.mean())
+    # Extract the NDVI value (average of all pixels)
+    ndvi_values = data[0].flatten()
+    ndvi_value = float(ndvi_values.mean())
 
-    return moisture_index
+    return ndvi_value
+
 
 # Initialize session state
 if 'grid_squares' not in st.session_state:
@@ -200,10 +200,10 @@ def generate_grid(polygon, grid_size):
             # centre_x = round(centre_x,4)
             # centre_y = round(centre_y,4)
             print("hello")
-            ndvi = get_soil_moisture(centre_y, centre_x)
+            ndvi = get_ndvi(centre_y, centre_x)
             ndvi_values.append(ndvi)
 
-            # ndvi_dict = {(centre_y, centre_x):ndvi}
+            ndvi_dict = {(centre_y, centre_x):ndvi}
     
     # Determine NDVI range
     # print(ndvi_dict)
@@ -219,7 +219,7 @@ def generate_grid(polygon, grid_size):
     grid_squares = []
     
     # Second pass to generate grid squares and assign color based on NDVI
-    # i = 0
+    i = 0
     for x in x_coords:
         for y in y_coords:
             square = geom.box(x, y, x + grid_size, y + grid_size)
@@ -237,7 +237,7 @@ def generate_grid(polygon, grid_size):
             
             if polygon.intersects(square):
                 # ndvi = ndvi_dict.get((centre_y, centre_x))
-                ndvi = get_soil_moisture(centre_y, centre_x)
+                ndvi = get_ndvi(centre_y, centre_x)
                 
                 print("centre_y test: ",centre_y)
                 print("centre_x test: ",centre_x)
@@ -253,18 +253,18 @@ def generate_grid(polygon, grid_size):
 # Drawing map
 with col1:
     st.subheader("Draw Polygon")
-    m_draw1 = leafmap.Map(center=[31.14, 75.34], zoom=15)
+    m_draw = leafmap.Map(center=[31.14, 75.34], zoom=15)
     # m_draw = leafmap.Map(center=[26.91, 70.9], zoom=15)
-    m_draw1.add_basemap("HYBRID")
-    Draw(export=True).add_to(m_draw1)
-    draw_output = st_folium(m_draw1, height=400, width=None, key="draw_map")
+    m_draw.add_basemap("HYBRID")
+    Draw(export=True).add_to(m_draw)
+    draw_output = st_folium(m_draw, height=400, width=None, key="draw_map")
 
 # Result map
 with col2:
     st.subheader("Generated Grid")
-    m_result1 = leafmap.Map(center=[31.14, 75.34], zoom=15)
+    m_result = leafmap.Map(center=[31.14, 75.34], zoom=15)
     # m_result = leafmap.Map(center=[26.91, 70.9], zoom=15)
-    m_result1.add_basemap("HYBRID")
+    m_result.add_basemap("HYBRID")
 
 
     # Process the drawn polygon
@@ -291,12 +291,13 @@ with col2:
             fill=True,
             fill_color=color,
             fill_opacity=opacity,
-        ).add_to(m_result1)
+        ).add_to(m_result)
 
-    st_folium(m_result1, height=400, width=None, key="result_map")
+    st_folium(m_result, height=400, width=None, key="result_map")
 
 # Show stats
 if st.session_state.grid_squares:
     print("DONE")
     # st.metric("Grid Squares Generated", len(st.session_state.grid_squares))
     show_legend()
+
