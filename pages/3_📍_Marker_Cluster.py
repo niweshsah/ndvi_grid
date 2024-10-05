@@ -971,8 +971,16 @@ import datetime
 from sentinelhub import SHConfig, BBox, CRS, DataCollection, SentinelHubRequest, MimeType
 
 
-def value_to_green_hex(value):
+def value_to_green_hex(ndvi_real, ndvi_max,ndvi_min):
+
+    if ndvi_max != ndvi_min:
+     value = (ndvi_real - ndvi_min)/(ndvi_max - ndvi_min)
+     value = round(value,3)
+    else:
+     value = 1
+
     if not 0 <= value <= 1:
+        print(value)
         raise ValueError("Input must be between 0 and 1")
     
     # Convert the value to an 8-bit integer (0-255)
@@ -984,25 +992,26 @@ def value_to_green_hex(value):
 
 
 
+    print("value: ",value)
 
 
-    # red_blue_component = int(255 * (1 - value))
-    # green_component = 255  # Green stays constant at 255
+    red_blue_component = int(255 * (1 - value))
+    green_component = 255  # Green stays constant at 255
     
-    # # Create the hex color code
-    # hex_color = f"#{red_blue_component:02x}{green_component:02x}{red_blue_component:02x}"
+    # Create the hex color code
+    hex_color = f"#{red_blue_component:02x}{green_component:02x}{red_blue_component:02x}"
 
 
-    if value > 0.7:
-        # Green (#00FF00)
-        return "#00FF00"
-    elif value > 0.3:
-        # Purple (#800080)
-        return "#800080"
-        # Red (#FF0000)
-    return "#FF0000"
+    # if value > 0.7:
+    #     # Green (#00FF00)
+    #     return "#00FF00"
+    # elif value > 0.3:
+    #     # Purple (#800080)
+    #     return "#800080"
+    #     # Red (#FF0000)
+    # return "#FF0000"
     
-    # return hex_color
+    return hex_color
 
 def get_ndvi(latitude, longitude, bbox_size_m=1000):
     """
@@ -1115,26 +1124,68 @@ with st.sidebar:
         st.session_state.grid_squares = []
         st.session_state.last_polygon = None
 
+
 def generate_grid(polygon, grid_size):
     minx, miny, maxx, maxy = polygon.bounds
     x_coords = np.arange(minx, maxx, grid_size)
     y_coords = np.arange(miny, maxy, grid_size)
     
+    ndvi_values = []
+    
+    # First pass to collect all NDVI values to determine range
+    for x in x_coords:
+        for y in y_coords:
+            centre_x = x + (grid_size/2)
+            centre_y = y + (grid_size/2)
+            # centre_x = round(centre_x,4)
+            # centre_y = round(centre_y,4)
+            print("hello")
+            ndvi = get_ndvi(centre_y, centre_x)
+            ndvi_values.append(ndvi)
+
+            ndvi_dict = {(centre_y, centre_x):ndvi}
+    
+    # Determine NDVI range
+    # print(ndvi_dict)
+    # print()
+    
+    # Determine NDVI range
+    min_ndvi = min(ndvi_values)
+    max_ndvi = max(ndvi_values)
+
+    print("max ndvi: ",max_ndvi, " min_ndvi: ",min_ndvi)
+    
+    
     grid_squares = []
+    
+    # Second pass to generate grid squares and assign color based on NDVI
+    i = 0
     for x in x_coords:
         for y in y_coords:
             square = geom.box(x, y, x + grid_size, y + grid_size)
+
             centre_x = x + (grid_size/2)
             centre_y = y + (grid_size/2)
 
-            if polygon.intersects(square):
-                # color = f"#{random.randint(0, 0xFFFFFF):06x}"
-                print("x: ",centre_x,"y: ",centre_y)
-                ndvi = get_ndvi(centre_y,centre_x)
-                print()
-                print("ndvi: ",ndvi)
-                color = value_to_green_hex(ndvi)
+            # centre_x = round(centre_x,4)
+            # centre_y = round(centre_y,4)
 
+            # keys_list = list(ndvi_dict.keys())
+            # if(i == keys_list.size)
+            # (centre_y, centre_x) = keys_list[i]
+            # i = i + 1
+            
+            if polygon.intersects(square):
+                # ndvi = ndvi_dict.get((centre_y, centre_x))
+                ndvi = get_ndvi(centre_y, centre_x)
+                
+                print("centre_y test: ",centre_y)
+                print("centre_x test: ",centre_x)
+                print("ndvi test: ",ndvi)
+                color = value_to_green_hex(ndvi, min_ndvi, max_ndvi)
+                print("latitude: ",centre_y," longitude: ",centre_x)
+                print("ndvi: ",ndvi)
+                print()
                 grid_squares.append((list(square.exterior.coords), color))
     
     return grid_squares
@@ -1142,8 +1193,8 @@ def generate_grid(polygon, grid_size):
 # Drawing map
 with col1:
     st.subheader("Draw Polygon")
-    # m_draw = leafmap.Map(center=[31.14, 75.34], zoom=15)
-    m_draw = leafmap.Map(center=[26.91, 70.9], zoom=15)
+    m_draw = leafmap.Map(center=[31.14, 75.34], zoom=15)
+    # m_draw = leafmap.Map(center=[26.91, 70.9], zoom=15)
     m_draw.add_basemap("HYBRID")
     Draw(export=True).add_to(m_draw)
     draw_output = st_folium(m_draw, height=400, width=None, key="draw_map")
@@ -1151,7 +1202,8 @@ with col1:
 # Result map
 with col2:
     st.subheader("Generated Grid")
-    m_result = leafmap.Map(center=[26.91, 70.9], zoom=15)
+    m_result = leafmap.Map(center=[31.14, 75.34], zoom=15)
+    # m_result = leafmap.Map(center=[26.91, 70.9], zoom=15)
     m_result.add_basemap("HYBRID")
 
 
